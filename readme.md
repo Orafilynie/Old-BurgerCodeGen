@@ -119,3 +119,5 @@ Please ensure the bot is invited to your Discord server with the appropriate per
 ---
 
 *Disclaimer: This bot is intended for educational purposes and should comply with Burger King France's terms and conditions. Unauthorized use of promotional codes is not endorsed and not my responsability.*
+
+*Credits: The captcha code was taken from this [repository](https://github.com/JustYuuto/burger-king-fr-api), which is an amazing work around the Burger King France API made by JustYuuto and helped me a lot with this projet, please don't forget to check his work !*
