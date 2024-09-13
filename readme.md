@@ -59,6 +59,7 @@ Navigate to the example.env file in the root directory and modify the following 
 
 ```env
 DISCORD_TOKEN=your_discord_bot_token
+CLIENT_ID=your_bot_id
 GUILD_ID=your_guild_id
 BUTTON_CHANNEL_ID=button_channel_id
 PROMPT_CATEGORY_ID=prompt_category_id
@@ -66,6 +67,7 @@ CODES_CATEGORY_ID=codes_category_id
 ```
 
 - **DISCORD_TOKEN**: Your Discord bot token.
+- **CLIENT_ID**: Your Discord bot ID.
 - **GUILD_ID**: The ID of your Discord server.
 - **BUTTON_CHANNEL_ID**: The ID of the channel where the "Generate" button will be placed.
 - **PROMPT_CATEGORY_ID**: The ID of the category where user prompt channels will be created.
