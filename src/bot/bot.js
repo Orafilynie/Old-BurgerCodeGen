@@ -129,6 +129,9 @@ client.on('interactionCreate', async interaction => {
     }
   } else if (interaction.isStringSelectMenu()) {
     switch (interaction.customId) {
+      case 'select_product':
+        await handleSelectProduct(interaction);
+        break;
       case 'select_lots':
         await handleSelectLots(interaction);
         break;
@@ -166,7 +169,7 @@ async function handleGenerateButton(interaction) {
 
     const embed = new EmbedBuilder()
       .setTitle('• BurgerCodeGen •')
-      .setDescription("Welcome to your own prompt channel.\n\nLet the bot guide you trough the whole process !")
+      .setDescription("Welcome to your own prompt channel.\n\nLet the bot guide you through the whole process!")
       .setColor('#FF5500');
 
     const startButton = new ButtonBuilder()
@@ -185,29 +188,44 @@ async function handleGenerateButton(interaction) {
 
     await channel.send({ embeds: [embed], components: [row] });
 
-    await interaction.reply({ content: `Your prompt channel has been created successfully ! Please go to this channel : ${channel.toString()}`, ephemeral: true });
+    await interaction.reply({ content: `Your prompt channel has been created successfully! Please go to this channel: ${channel.toString()}`, ephemeral: true });
   } catch (err) {
     console.error('Error while trying to handle the generate button:', err);
-    await interaction.reply({ content: 'An error has occured with your request.', ephemeral: true });
+    await interaction.reply({ content: 'An error has occurred with your request.', ephemeral: true });
   }
 }
 
 async function handleStartButton(interaction) {
   try {
     const channel = interaction.channel;
-    await interaction.message.edit({ components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_prompt_button').setLabel('‎ ‎ ‎ Close').setEmoji('🧽').setStyle(ButtonStyle.Danger))] });
+    await interaction.message.edit({
+      components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('close_prompt_button')
+          .setLabel('‎ ‎ ‎ Close')
+          .setEmoji('🧽')
+          .setStyle(ButtonStyle.Danger)
+      )]
+    });
 
     const selectMenu = new StringSelectMenuBuilder()
-      .setCustomId('select_lots')
-      .setPlaceholder('Select how much lots.')
-      .addOptions([...Array(10).keys()].map(i => ({ label: `${i + 1}`, value: `${i + 1}` })));
+      .setCustomId('select_product')
+      .setPlaceholder('Select a product.')
+      .addOptions([
+        { label: '🍔 Burger', value: 'burger' },
+        { label: '🍦 Ice Cream', value: 'icecream' }
+      ]);
 
     const embed = new EmbedBuilder()
-      .setTitle('• Step 1/2 •')
-      .setDescription("First, how much lots do you want ?\n\n[INFO] : Each lot contains **2 codes**, and you can generate a maximum of **10 lots**.")
+      .setTitle('• Product Selection •')
+      .setDescription('You can choose between **Burger** codes and **Ice Cream** codes.\n\nPlease choose what product you want with the dropdown menu.')
       .setColor('#FF5500');
 
-    await channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
+    await channel.send({
+      embeds: [embed],
+      components: [new ActionRowBuilder().addComponents(selectMenu)]
+    });
+
     await interaction.deferUpdate();
   } catch (err) {
     console.error('Error while trying to handle the start button:', err);
@@ -218,27 +236,71 @@ async function handleCloseButton(interaction) {
   try {
     await interaction.channel.delete();
   } catch (err) {
-    console.error('Error while trying to close channel code:', err);
+    console.error('Error while trying to close channel!', err);
+  }
+}
+
+async function handleSelectProduct(interaction) {
+  try {
+    const productType = interaction.values[0];
+    const userId = interaction.user.id;
+    const userData = userSelections.get(userId) || {};
+    userData.productType = productType;
+    userSelections.set(userId, userData);
+
+    if (productType === 'burger' || productType === 'icecream') {
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId('select_lots')
+        .setPlaceholder('Select how many lots.')
+        .addOptions([...Array(10).keys()].map(i => ({ label: `${i + 1}`, value: `${i + 1}` })));
+
+      const embed = new EmbedBuilder()
+        .setTitle('• Lots Quantity •')
+        .setDescription("First, how many lots do you want?\n\n[INFO]: Each lot contains **2 codes**, and you can generate a maximum of **10 lots**.")
+        .setColor('#FF5500');
+
+      await interaction.update({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
+    }
+  } catch (err) {
+    console.error('Error while selecting product:', err);
   }
 }
 
 async function handleSelectLots(interaction) {
   try {
+    const userId = interaction.user.id;
     const lots = parseInt(interaction.values[0]);
     const totalCodes = lots * 2;
-    userSelections.set(interaction.user.id, { totalCodes });
+    const userData = userSelections.get(userId) || {};
+    userData.totalCodes = totalCodes;
+    userSelections.set(userId, userData);
 
-    const meatSelectMenu = new StringSelectMenuBuilder()
-      .setCustomId('select_meat')
-      .setPlaceholder('Select how much meat codes.')
-      .addOptions([...Array(totalCodes + 1).keys()].map(i => ({ label: `${i}`, value: `${i}` })));
+    if (userData.productType === 'burger') {
+      const meatSelectMenu = new StringSelectMenuBuilder()
+        .setCustomId('select_meat')
+        .setPlaceholder('Select how many meat codes.')
+        .addOptions([...Array(totalCodes + 1).keys()].map(i => ({ label: `${i}`, value: `${i}` })));
 
-    const embed = new EmbedBuilder()
-      .setTitle('• Step 2/2 •')
-      .setDescription("Now choose how much **Meat** codes you want.\n\nThe rest of the unseletced codes will be assigned as **Veggie**.")
-      .setColor('#FF5500');
+      const embed = new EmbedBuilder()
+        .setTitle('• Burger Choices •')
+        .setDescription("Now choose how many **Meat** codes you want.\n\nThe rest of the unselected codes will be assigned as **Veggie**.")
+        .setColor('#FF5500');
 
-    await interaction.update({ embeds: [embed], components: [new ActionRowBuilder().addComponents(meatSelectMenu)] });
+      await interaction.update({ embeds: [embed], components: [new ActionRowBuilder().addComponents(meatSelectMenu)] });
+    } else if (userData.productType === 'icecream') {
+      const embed = new EmbedBuilder()
+        .setTitle('• Choices Summary •')
+        .setDescription(`Here is your choices summary:\n\n🍦 • **Ice Cream**: ${totalCodes}\n\nIf your choices are **correct**, please press the **Confirm** button.\nElse, close this prompt channel and create a new one.`)
+        .setColor('#FF5500');
+
+      const confirmButton = new ButtonBuilder()
+        .setCustomId('confirm_button')
+        .setLabel('‎ ‎ ‎ Confirm')
+        .setEmoji('🍦')
+        .setStyle(ButtonStyle.Success);
+
+      await interaction.update({ embeds: [embed], components: [new ActionRowBuilder().addComponents(confirmButton)] });
+    }
   } catch (err) {
     console.error('Error while selecting lots:', err);
   }
@@ -246,15 +308,19 @@ async function handleSelectLots(interaction) {
 
 async function handleSelectMeat(interaction) {
   try {
+    const userId = interaction.user.id;
     const meatCodes = parseInt(interaction.values[0]);
-    const totalCodes = userSelections.get(interaction.user.id).totalCodes;
+    const userData = userSelections.get(userId);
+    const totalCodes = userData.totalCodes;
     const veggieCodes = totalCodes - meatCodes;
 
-    userSelections.set(interaction.user.id, { meatCodes, veggieCodes });
+    userData.meatCodes = meatCodes;
+    userData.veggieCodes = veggieCodes;
+    userSelections.set(userId, userData);
 
     const embed = new EmbedBuilder()
       .setTitle('• Choices Summary •')
-      .setDescription(`Here is your choices summary :\n\n🍖 • **Meat** : ${meatCodes}\n🍃 • **Veggie** : ${veggieCodes}\n\nIf your choices are **correct**, please press the **confirm** button.\nElse, close this prompt channel and create a new one.`)
+      .setDescription(`Here is your choices summary:\n\n🍖 • **Meat**: ${meatCodes}\n🍃 • **Veggie**: ${veggieCodes}\n\nIf your choices are **correct**, please press the **Confirm** button.\nElse, close this prompt channel and create a new one.`)
       .setColor('#FF5500');
 
     const confirmButton = new ButtonBuilder()
@@ -273,8 +339,13 @@ async function handleConfirmButton(interaction) {
   try {
     const guild = await client.guilds.fetch(GUILD_ID);
     const userId = interaction.user.id;
-    const { meatCodes, veggieCodes } = userSelections.get(userId);
-    const choices = 'B'.repeat(meatCodes) + 'V'.repeat(veggieCodes);
+    const userData = userSelections.get(userId);
+    const { productType, totalCodes } = userData;
+
+    if (!productType) {
+      await interaction.reply({ content: 'Product type is not specified.', ephemeral: true });
+      return;
+    }
 
     const codesChannel = await guild.channels.create({
       name: `codes-${userId}`,
@@ -287,7 +358,7 @@ async function handleConfirmButton(interaction) {
       ],
     });
 
-    await interaction.reply({ content: `Your choices has been confirmed. The generation process has been launched.\n\nPlease go to this channel : ${codesChannel.toString()}\n\nYour prompt channel will be deleted after the generation is complete.`, ephemeral: true });
+    await interaction.reply({ content: `Your choices have been confirmed. The generation process has been launched.\n\nPlease go to this channel: ${codesChannel.toString()}\n\nYour prompt channel will be deleted after the generation is complete.`, ephemeral: true });
 
     ensureDirectoryExists(QR_CODE_DIRECTORY);
     const tempUserDir = createTempUserDirectory(userId);
@@ -295,7 +366,7 @@ async function handleConfirmButton(interaction) {
 
     const embed = new EmbedBuilder()
       .setTitle('• BurgerCodeGen •')
-      .setDescription("The codes are being generated, please wait patiently.\n\nAfter you used your codes, please close this channel, else you won't be able to generate new codes.")
+      .setDescription("The codes are being generated, please wait patiently.\n\nAfter you use your codes, please close this channel, else you won't be able to generate new codes.")
       .setColor('#FF5500');
 
     const closeButton = new ButtonBuilder()
@@ -306,18 +377,32 @@ async function handleConfirmButton(interaction) {
 
     await codesChannel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(closeButton)] });
 
-    const lots = choices.match(/.{1,2}/g);
-    for (let i = 0; i < lots.length; i++) {
-      const [firstChoice, secondChoice] = lots[i];
-      const { firstCode, secondCode } = await generateCodes('burger', firstChoice, secondChoice);
+    if (productType === 'burger') {
+      const { meatCodes, veggieCodes } = userData;
+      const choices = 'B'.repeat(meatCodes) + 'V'.repeat(veggieCodes);
+      const lots = choices.match(/.{1,2}/g);
 
-      const firstQRCodeFile = await generateQRCode(firstCode, path.join(tempUserDir, `lot_${i + 1}_code_1.png`));
-      const secondQRCodeFile = await generateQRCode(secondCode, path.join(tempUserDir, `lot_${i + 1}_code_2.png`));
+      for (let i = 0; i < lots.length; i++) {
+        const [firstChoice, secondChoice] = lots[i];
+        const { firstCode, secondCode } = await generateCodes('burger', firstChoice, secondChoice);
 
-      generatedFiles.push(firstQRCodeFile, secondQRCodeFile);
+        const firstQRCodeFile = await generateQRCode(firstCode, path.join(tempUserDir, `lot_${i + 1}_code_1.png`));
+        const secondQRCodeFile = await generateQRCode(secondCode, path.join(tempUserDir, `lot_${i + 1}_code_2.png`));
 
-      await sendCodeEmbed(codesChannel, i + 1, 1, firstChoice, firstCode, firstQRCodeFile);
-      await sendCodeEmbed(codesChannel, i + 1, 2, secondChoice, secondCode, secondQRCodeFile);
+        generatedFiles.push(firstQRCodeFile, secondQRCodeFile);
+
+        await sendCodeEmbed(codesChannel, i + 1, 1, firstChoice, firstCode, firstQRCodeFile, productType);
+        await sendCodeEmbed(codesChannel, i + 1, 2, secondChoice, secondCode, secondQRCodeFile, productType);
+      }
+    } else if (productType === 'icecream') {
+      for (let i = 0; i < totalCodes; i++) {
+        const { firstCode } = await generateCodes('icecream');
+
+        const qrCodeFile = await generateQRCode(firstCode, path.join(tempUserDir, `code_${i + 1}.png`));
+        generatedFiles.push(qrCodeFile);
+
+        await sendCodeEmbed(codesChannel, null, i + 1, null, firstCode, qrCodeFile, productType);
+      }
     }
 
     const zipFilePath = path.join(QR_CODE_DIRECTORY, `QRcodes_${userId}.zip`);
@@ -339,11 +424,18 @@ async function handleConfirmButton(interaction) {
   }
 }
 
-async function sendCodeEmbed(channel, lotNumber, codeNumber, choice, code, qrCodeFile) {
+async function sendCodeEmbed(channel, lotNumber, codeNumber, choice, code, qrCodeFile, productType) {
+  let description;
+  if (productType === 'burger') {
+    description = `\n**Lot ${lotNumber} - Code ${codeNumber}**\n\n**${choice === 'B' ? '🍖 • Meat' : '🍃 • Veggie'}** code:\n\`\`\`${code}\`\`\``;
+  } else if (productType === 'icecream') {
+    description = `\n**Code ${codeNumber}**\n\n🍦 • **Ice Cream** code:\n\`\`\`${code}\`\`\``;
+  }
+
   const embed = new EmbedBuilder()
     .setTitle('• BurgerCodeGen •')
-    .setDescription(`\n**Lot ${lotNumber} - Code ${codeNumber}**\n\n**${choice === 'B' ? '🍖 • Meat' : '🍃 • Veggie'}** code:\n\`\`\`${code}\`\`\``)
-    .setThumbnail(`attachment://lot_${lotNumber}_code_${codeNumber}.png`)
+    .setDescription(description)
+    .setThumbnail(`attachment://${path.basename(qrCodeFile)}`)
     .setColor('#FF5500');
 
   await channel.send({ embeds: [embed], files: [qrCodeFile] });
