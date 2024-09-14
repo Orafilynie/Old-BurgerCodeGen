@@ -31,9 +31,7 @@ async function generateCodes(firstChoice, secondChoice) {
       'Content-Type': 'application/json'
     };
 
-    await axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/features', { headers });
     await axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/app/initialize', { headers });
-    await axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/home', { headers });
 
     const data = { king: deviceId, hash, queen: queenToken };
     const offersResponse = await axios.post('https://webapi.burgerking.fr/blossom/api/v13/public/offers/page', data, { headers });
