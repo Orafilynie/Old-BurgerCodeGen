@@ -59,25 +59,21 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
         couponName = "Glace Mystère";
         couponCode = "glace-mystere";
       } else {
-        throw new Error('ÉCHEC • Type de produit invalide fourni !');
+        throw new Error('ERROR • Unknown ProductType given!');
       }
 
-      // Parcourir les opérations pour trouver les coupons correspondants
       for (const operation of operationsResponse.data) {
         if (operation.name === couponName || operation.code === couponCode) {
           const coupons = operation.coupons || [];
           for (const coupon of coupons) {
             restaurantCodes.push(coupon.restaurantCode);
-            // Pour les burgers, nous avons besoin de 2 codes
             if (productType === 'burger' && restaurantCodes.length >= 2) {
               break;
             }
-            // Pour les glaces, nous pouvons collecter jusqu'à 2 codes
             if (productType === 'icecream' && restaurantCodes.length >= 2) {
               break;
             }
           }
-          // Si nous avons les codes nécessaires, nous pouvons sortir de la boucle
           if (restaurantCodes.length >= 2) {
             break;
           }
@@ -85,19 +81,17 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
       }
 
       if (restaurantCodes.length < 1) {
-        throw new Error('ÉCHEC • Aucun code de restaurant trouvé !');
+        throw new Error('ERROR • No codes were found!');
       }
 
       if (productType === 'icecream') {
-        // Pour les glaces, assigner les codes directement
         const firstCode = restaurantCodes[0] || null;
         const secondCode = restaurantCodes[1] || null;
         return { firstCode, secondCode };
       }
 
-      // Pour les burgers, procéder à l'activation
       if (!firstChoice || !secondChoice) {
-        throw new Error('ÉCHEC • Les choix firstChoice et secondChoice sont requis pour les burgers !');
+        throw new Error('ERROR • The choices were not given for burger codes!');
       }
 
       const promotionIds = {
@@ -109,7 +103,7 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
       const secondPromotionId = promotionIds[secondChoice];
 
       if (!firstPromotionId || !secondPromotionId) {
-        throw new Error('ÉCHEC • Choix invalides fournis !');
+        throw new Error('ERROR • Invalid choices for burger codes !');
       }
 
       const firstUrl = `https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/burger-mystere/confirm-choice?couponCode=${restaurantCodes[0]}&promotionId=${firstPromotionId}`;
@@ -126,13 +120,13 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
 
         return { firstCode, secondCode };
       } else {
-        throw new Error('ÉCHEC • Le processus d’activation a échoué !');
+        throw new Error('ERROR • The activation process failed for burger codes!');
       }
     } else {
-      throw new Error('ÉCHEC • Échec lors de la récupération des codes générés !');
+      throw new Error('ERROR • Failed to fetch the codes from the respondes!');
     }
   } catch (error) {
-    console.error('Une erreur est survenue :', error.message);
+    console.error('ERROR • A general failure has occured!', error.message);
     throw error;
   }
 }
