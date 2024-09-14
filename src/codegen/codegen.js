@@ -34,40 +34,70 @@ async function generateCodes(firstChoice, secondChoice) {
     await axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/app/initialize', { headers });
 
     const data = { king: deviceId, hash, queen: queenToken };
-    const offersResponse = await axios.post('https://webapi.burgerking.fr/blossom/api/v13/public/offers/page', data, { headers });
+
+    const offersResponse = await axios.post(
+      'https://webapi.burgerking.fr/blossom/api/v13/public/offers/page',
+      data,
+      { headers }
+    );
 
     if (offersResponse.status === 200) {
-      const operationsResponse = await axios.post('https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/all', data, { headers });
+      const operationsResponse = await axios.post(
+        'https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/all',
+        data,
+        { headers }
+      );
 
-      const restaurantCodes = operationsResponse.data
-        .map(operation => operation.coupons || [])
-        .flat()
-        .filter(coupon => coupon.name === "Burger Mystère ou Veggie Mystère")
-        .map(coupon => coupon.restaurantCode);
+      const restaurantCodes = [];
+      for (const operation of operationsResponse.data) {
+        const coupons = operation.coupons || [];
+        for (const coupon of coupons) {
+          if (coupon.name === "Burger Mystère ou Veggie Mystère") {
+            restaurantCodes.push(coupon.restaurantCode);
+            if (restaurantCodes.length === 2) break;
+          }
+        }
+        if (restaurantCodes.length === 2) break;
+      }
 
-      const firstPromotionId = firstChoice === 'B' ? '7129189026081447688' : '6645000801566560157';
-      const secondPromotionId = secondChoice === 'B' ? '7129189026081447688' : '6645000801566560157';
+      if (restaurantCodes.length < 2) {
+        throw new Error('ÉCHEC • Codes de restaurant insuffisants trouvés !');
+      }
+
+      const promotionIds = {
+        B: '7129189026081447688',
+        V: '6645000801566560157'
+      };
+
+      const firstPromotionId = promotionIds[firstChoice];
+      const secondPromotionId = promotionIds[secondChoice];
+
+      if (!firstPromotionId || !secondPromotionId) {
+        throw new Error('ÉCHEC • Choix invalides fournis !');
+      }
 
       const firstUrl = `https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/burger-mystere/confirm-choice?couponCode=${restaurantCodes[0]}&promotionId=${firstPromotionId}`;
       const secondUrl = `https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/burger-mystere/confirm-choice?couponCode=${restaurantCodes[1]}&promotionId=${secondPromotionId}`;
 
-      const firstResponse = await axios.post(firstUrl, data, { headers });
-      const secondResponse = await axios.post(secondUrl, data, { headers });
+      const [firstResponse, secondResponse] = await Promise.all([
+        axios.post(firstUrl, data, { headers }),
+        axios.post(secondUrl, data, { headers })
+      ]);
 
       if (firstResponse.status === 200 && secondResponse.status === 200) {
-
         const firstCode = firstChoice + restaurantCodes[0].substring(1);
         const secondCode = secondChoice + restaurantCodes[1].substring(1);
 
-        return {firstCode, secondCode};
+        return { firstCode, secondCode };
       } else {
-        throw new Error('FAILURE  • The activation process went wrong!');
+        throw new Error('ÉCHEC • Le processus d’activation a échoué !');
       }
     } else {
-      throw new Error('FAILURE  • Failed to fetch the generated codes!');
+      throw new Error('ÉCHEC • Échec lors de la récupération des codes générés !');
     }
   } catch (error) {
-    throw new Error('FAILURE  • General error!', error);
+    console.error('Une erreur est survenue :', error.message);
+    throw error;
   }
 }
 
