@@ -327,7 +327,13 @@ async function handleConfirmButton(interaction) {
     deleteFiles(generatedFiles.concat(zipFilePath));
     deleteDirectory(tempUserDir);
 
-    setTimeout(() => interaction.channel.delete(), 5000);
+    setTimeout(() => {
+      if (interaction.channel) {
+        interaction.channel.delete().catch(error => {
+          console.error('Error while deleting the prompt channel:', error);
+        });
+      }
+    }, 5000);
   } catch (err) {
     console.error('Error while confirming:', err);
   }
