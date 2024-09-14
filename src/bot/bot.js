@@ -195,7 +195,7 @@ async function handleGenerateButton(interaction) {
 async function handleStartButton(interaction) {
   try {
     const channel = interaction.channel;
-    await interaction.message.edit({ components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_prompt_button').setLabel('Fermer').setEmoji('🧽').setStyle(ButtonStyle.Danger))] });
+    await interaction.message.edit({ components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_prompt_button').setLabel('‎ ‎ ‎ Close').setEmoji('🧽').setStyle(ButtonStyle.Danger))] });
 
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId('select_lots')
