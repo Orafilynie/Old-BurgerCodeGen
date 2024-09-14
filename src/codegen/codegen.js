@@ -12,7 +12,7 @@ function generateHash(king) {
   return crypto.createHash('md5').update(toHash).digest('hex');
 }
 
-async function generateCodes(firstChoice, secondChoice) {
+async function generateCodes(productType, firstChoice = null, secondChoice = null) {
   try {
     const queenToken = await Captcha.resolve();
     const deviceId = uuidv4().toUpperCase();
@@ -49,19 +49,55 @@ async function generateCodes(firstChoice, secondChoice) {
       );
 
       const restaurantCodes = [];
-      for (const operation of operationsResponse.data) {
-        const coupons = operation.coupons || [];
-        for (const coupon of coupons) {
-          if (coupon.name === "Burger Mystère ou Veggie Mystère") {
-            restaurantCodes.push(coupon.restaurantCode);
-            if (restaurantCodes.length === 2) break;
-          }
-        }
-        if (restaurantCodes.length === 2) break;
+      let couponName;
+      let couponCode;
+
+      if (productType === 'burger') {
+        couponName = "Burger Mystère ou Veggie Mystère";
+        couponCode = "burger-mystere";
+      } else if (productType === 'icecream') {
+        couponName = "Glace Mystère";
+        couponCode = "glace-mystere";
+      } else {
+        throw new Error('ÉCHEC • Type de produit invalide fourni !');
       }
 
-      if (restaurantCodes.length < 2) {
-        throw new Error('ÉCHEC • Codes de restaurant insuffisants trouvés !');
+      // Parcourir les opérations pour trouver les coupons correspondants
+      for (const operation of operationsResponse.data) {
+        if (operation.name === couponName || operation.code === couponCode) {
+          const coupons = operation.coupons || [];
+          for (const coupon of coupons) {
+            restaurantCodes.push(coupon.restaurantCode);
+            // Pour les burgers, nous avons besoin de 2 codes
+            if (productType === 'burger' && restaurantCodes.length >= 2) {
+              break;
+            }
+            // Pour les glaces, nous pouvons collecter jusqu'à 2 codes
+            if (productType === 'icecream' && restaurantCodes.length >= 2) {
+              break;
+            }
+          }
+          // Si nous avons les codes nécessaires, nous pouvons sortir de la boucle
+          if (restaurantCodes.length >= 2) {
+            break;
+          }
+        }
+      }
+
+      if (restaurantCodes.length < 1) {
+        throw new Error('ÉCHEC • Aucun code de restaurant trouvé !');
+      }
+
+      if (productType === 'icecream') {
+        // Pour les glaces, assigner les codes directement
+        const firstCode = restaurantCodes[0] || null;
+        const secondCode = restaurantCodes[1] || null;
+        return { firstCode, secondCode };
+      }
+
+      // Pour les burgers, procéder à l'activation
+      if (!firstChoice || !secondChoice) {
+        throw new Error('ÉCHEC • Les choix firstChoice et secondChoice sont requis pour les burgers !');
       }
 
       const promotionIds = {
