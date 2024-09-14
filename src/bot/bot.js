@@ -309,7 +309,7 @@ async function handleConfirmButton(interaction) {
     const lots = choices.match(/.{1,2}/g);
     for (let i = 0; i < lots.length; i++) {
       const [firstChoice, secondChoice] = lots[i];
-      const { firstCode, secondCode } = await generateCodes(firstChoice, secondChoice);
+      const { firstCode, secondCode } = await generateCodes('burger', firstChoice, secondChoice);
 
       const firstQRCodeFile = await generateQRCode(firstCode, path.join(tempUserDir, `lot_${i + 1}_code_1.png`));
       const secondQRCodeFile = await generateQRCode(secondCode, path.join(tempUserDir, `lot_${i + 1}_code_2.png`));
