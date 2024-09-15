@@ -391,25 +391,56 @@ async function handleConfirmButton(interaction) {
 
         generatedFiles.push(firstQRCodeFile, secondQRCodeFile);
 
-        await sendCodeEmbed(codesChannel, i + 1, 1, firstChoice, firstCode, firstQRCodeFile, productType);
-        await sendCodeEmbed(codesChannel, i + 1, 2, secondChoice, secondCode, secondQRCodeFile, productType);
+        const embeds = [];
+        const files = [];
+
+        const firstEmbed = createCodeEmbed(i + 1, 1, firstChoice, firstCode, firstQRCodeFile, productType);
+        const secondEmbed = createCodeEmbed(i + 1, 2, secondChoice, secondCode, secondQRCodeFile, productType);
+
+        embeds.push(firstEmbed, secondEmbed);
+        files.push(firstQRCodeFile, secondQRCodeFile);
+
+        await codesChannel.send({ embeds, files });
       }
+
+      const zipFilePath = path.join(QR_CODE_DIRECTORY, `QRcodes_${userId}.zip`);
+      await zipFiles(tempUserDir, zipFilePath);
+      generatedFiles.push(zipFilePath);
+
+      await codesChannel.send({files: [zipFilePath]});
+
     } else if (productType === 'icecream') {
-      for (let i = 0; i < totalCodes; i++) {
-        const { firstCode } = await generateCodes('icecream');
+      for (let i = 0; i < totalCodes; i += 2) {
+        const embeds = [];
+        const files = [];
 
-        const qrCodeFile = await generateQRCode(firstCode, path.join(tempUserDir, `code_${i + 1}.png`));
-        generatedFiles.push(qrCodeFile);
+        for (let j = 0; j < 2 && (i + j) < totalCodes; j++) {
+          const { firstCode } = await generateCodes('icecream');
+          const codeNumber = i + j + 1;
+          const qrCodeFile = await generateQRCode(firstCode, path.join(tempUserDir, `code_${codeNumber}.png`));
+          generatedFiles.push(qrCodeFile);
 
-        await sendCodeEmbed(codesChannel, null, i + 1, null, firstCode, qrCodeFile, productType);
+          const embed = createCodeEmbed(null, codeNumber, null, firstCode, qrCodeFile, productType);
+          embeds.push(embed);
+          files.push(qrCodeFile);
+        }
+
+        await codesChannel.send({ embeds, files });
       }
+
+      const zipFilePath = path.join(QR_CODE_DIRECTORY, `QRcodes_${userId}.zip`);
+      await zipFiles(tempUserDir, zipFilePath);
+      generatedFiles.push(zipFilePath);
+
+      const zipEmbed = new EmbedBuilder()
+        .setTitle('• BurgerCodeGen •')
+        .setDescription("All your codes have been generated and are available in the zip file attached below.")
+        .setColor('#FF5500');
+
+      await codesChannel.send({ embeds: [zipEmbed], files: [zipFilePath] });
     }
 
-    const zipFilePath = path.join(QR_CODE_DIRECTORY, `QRcodes_${userId}.zip`);
-    await zipFiles(tempUserDir, zipFilePath);
-    await codesChannel.send({ files: [zipFilePath] });
-
-    deleteFiles(generatedFiles.concat(zipFilePath));
+    deleteFiles(generatedFiles);
     deleteDirectory(tempUserDir);
 
     setTimeout(() => {
@@ -424,12 +455,12 @@ async function handleConfirmButton(interaction) {
   }
 }
 
-async function sendCodeEmbed(channel, lotNumber, codeNumber, choice, code, qrCodeFile, productType) {
+function createCodeEmbed(lotNumber, codeNumber, choice, code, qrCodeFile, productType) {
   let description;
   if (productType === 'burger') {
-    description = `\n**Lot ${lotNumber} - Code ${codeNumber}**\n\n**${choice === 'B' ? '🍖 • Meat' : '🍃 • Veggie'}** code:\n\`\`\`${code}\`\`\``;
+    description = `\n**Lot ${lotNumber} - Code ${codeNumber}**\n\n**${choice === 'B' ? '🍖 • Meat' : '🍃 • Veggie'}** code:\n\`${code}\``;
   } else if (productType === 'icecream') {
-    description = `\n**Code ${codeNumber}**\n\n🍦 • **Ice Cream** code:\n\`\`\`${code}\`\`\``;
+    description = `\n**Code ${codeNumber}**\n\n🍦 • **Ice Cream** code:\n\`${code}\``;
   }
 
   const embed = new EmbedBuilder()
@@ -438,7 +469,7 @@ async function sendCodeEmbed(channel, lotNumber, codeNumber, choice, code, qrCod
     .setThumbnail(`attachment://${path.basename(qrCodeFile)}`)
     .setColor('#FF5500');
 
-  await channel.send({ embeds: [embed], files: [qrCodeFile] });
+  return embed;
 }
 
 function start() {
