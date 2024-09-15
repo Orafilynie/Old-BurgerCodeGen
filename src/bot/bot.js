@@ -431,13 +431,8 @@ async function handleConfirmButton(interaction) {
       const zipFilePath = path.join(QR_CODE_DIRECTORY, `QRcodes_${userId}.zip`);
       await zipFiles(tempUserDir, zipFilePath);
       generatedFiles.push(zipFilePath);
-
-      const zipEmbed = new EmbedBuilder()
-        .setTitle('• BurgerCodeGen •')
-        .setDescription("All your codes have been generated and are available in the zip file attached below.")
-        .setColor('#FF5500');
-
-      await codesChannel.send({ embeds: [zipEmbed], files: [zipFilePath] });
+      
+      await codesChannel.send({files: [zipFilePath]});
     }
 
     deleteFiles(generatedFiles);
