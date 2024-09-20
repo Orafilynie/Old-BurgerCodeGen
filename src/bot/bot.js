@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, SlashCommandBuilder, Collection } = require('discord.js');
 const QRCode = require('qrcode');
 const archiver = require('archiver');
 require('dotenv').config();
@@ -8,10 +8,8 @@ const { generateCodes } = require('../codegen/codegen');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
-const BUTTON_CHANNEL_ID = process.env.BUTTON_CHANNEL_ID;
-const PROMPT_CATEGORY_ID = process.env.PROMPT_CATEGORY_ID;
-const CODES_CATEGORY_ID = process.env.CODES_CATEGORY_ID;
 const QR_CODE_DIRECTORY = './qrcodes/';
+const DATA_FILE = './data.json';
 
 const client = new Client({
   intents: [
@@ -21,6 +19,18 @@ const client = new Client({
     GatewayIntentBits.GuildMessageReactions
   ]
 });
+
+client.commands = new Collection();
+
+// Load or initialize data.json
+let botData = {};
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    botData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch (err) {
+    console.error('Error parsing data.json:', err);
+  }
+}
 
 const userSelections = new Map();
 
@@ -78,75 +88,186 @@ function deleteDirectory(directory) {
 }
 
 client.once('ready', async () => {
-  try {
-    const channel = await client.channels.fetch(BUTTON_CHANNEL_ID);
-    const messages = await channel.messages.fetch({ limit: 1 });
-    const lastMessage = messages.first();
-
-    if (!lastMessage || !lastMessage.components.length || lastMessage.components[0].components[0].customId !== 'generate_button') {
-      const embed = new EmbedBuilder()
-        .setTitle('• BurgerCodeGen •')
-        .setDescription(
-          "\nThis bot was made to generate codes for the promotional operation \"Burger Mystère\" of Burger King France.\n\nTo start, please press the button and follow the instructions.\n\nThe bot will create your own channel for you to make your request and handle it."
-        )
-        .setColor('#FF5500');
-
-      const generateButton = new ButtonBuilder()
-        .setCustomId('generate_button')
-        .setLabel('‎ ‎ ‎ Generate')
-        .setEmoji('🍔')
-        .setStyle(ButtonStyle.Success);
-
-      const row = new ActionRowBuilder().addComponents(generateButton);
-
-      await channel.send({ embeds: [embed], components: [row] });
+  console.log(`Logged in as ${client.user.tag}!`);
+  const guild = client.guilds.cache.get(botData.GUILD_ID || GUILD_ID);
+  if (guild) {
+    try {
+      await guild.commands.create(
+        new SlashCommandBuilder()
+          .setName('deploy')
+          .setDescription('Deploy the bot by creating necessary categories and channels.')
+          .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
+      );
+      console.log('Slash command /deploy registered.');
+    } catch (err) {
+      console.error('Error registering /deploy command:', err);
     }
-  } catch (err) {
-    console.error('Error while starting the bot:', err);
+  } else {
+    console.error('Guild not found. Please check GUILD_ID in your .env file or data.json.');
   }
 });
 
 client.on('interactionCreate', async interaction => {
-  if (interaction.isButton()) {
-    switch (interaction.customId) {
-      case 'generate_button':
-        await handleGenerateButton(interaction);
-        break;
-      case 'start_button':
-        await handleStartButton(interaction);
-        break;
-      case 'close_prompt_button':
-        await handleCloseButton(interaction);
-        break;
-      case 'confirm_button':
-        await handleConfirmButton(interaction);
-        break;
-      case 'close_codes_button':
-        await handleCloseButton(interaction);
-        break;
-      default:
-        console.warn(`Interaction not handled: ${interaction.customId}`);
+  try {
+    if (interaction.isCommand()) {
+      const { commandName } = interaction;
+
+      if (commandName === 'deploy') {
+        await handleDeployCommand(interaction);
+      }
+    } else if (interaction.isButton()) {
+      if (!botData || !botData.GUILD_ID || !botData.BUTTON_CHANNEL_ID || !botData.PROMPT_CATEGORY_ID || !botData.CODES_CATEGORY_ID) {
+        await interaction.reply({ content: 'Missing data.json file or bot is not properly configured. Please contact the owner.', ephemeral: true });
+        return;
+      }
+
+      switch (interaction.customId) {
+        case 'generate_button':
+          await handleGenerateButton(interaction);
+          break;
+        case 'start_button':
+          await handleStartButton(interaction);
+          break;
+        case 'close_prompt_button':
+          await handleCloseButton(interaction);
+          break;
+        case 'confirm_button':
+          await handleConfirmButton(interaction);
+          break;
+        case 'close_codes_button':
+          await handleCloseButton(interaction);
+          break;
+        default:
+          console.warn(`Interaction not handled: ${interaction.customId}`);
+      }
+    } else if (interaction.isStringSelectMenu()) {
+      if (!botData || !botData.GUILD_ID || !botData.BUTTON_CHANNEL_ID || !botData.PROMPT_CATEGORY_ID || !botData.CODES_CATEGORY_ID) {
+        await interaction.reply({ content: 'Missing data.json file or bot is not properly configured. Please contact the owner.', ephemeral: true });
+        return;
+      }
+
+      switch (interaction.customId) {
+        case 'select_product':
+          await handleSelectProduct(interaction);
+          break;
+        case 'select_lots':
+          await handleSelectLots(interaction);
+          break;
+        case 'select_meat':
+          await handleSelectMeat(interaction);
+          break;
+        default:
+          console.warn(`Dropdown not handled: ${interaction.customId}`);
+      }
     }
-  } else if (interaction.isStringSelectMenu()) {
-    switch (interaction.customId) {
-      case 'select_product':
-        await handleSelectProduct(interaction);
-        break;
-      case 'select_lots':
-        await handleSelectLots(interaction);
-        break;
-      case 'select_meat':
-        await handleSelectMeat(interaction);
-        break;
-      default:
-        console.warn(`Dropdown not handled: ${interaction.customId}`);
+  } catch (err) {
+    console.error('Error handling interaction:', err);
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ content: 'An unexpected error occurred. Please contact the owner.', ephemeral: true });
+    } else {
+      await interaction.reply({ content: 'An unexpected error occurred. Please contact the owner.', ephemeral: true });
     }
   }
 });
 
+async function handleDeployCommand(interaction) {
+  try {
+    const guild = await client.guilds.fetch(interaction.guildId);
+
+    // Check if data.json exists and IDs are valid
+    let alreadyDeployed = false;
+
+    if (botData.GUILD_ID && botData.BUTTON_CHANNEL_ID && botData.PROMPT_CATEGORY_ID && botData.CODES_CATEGORY_ID) {
+      const buttonChannel = guild.channels.cache.get(botData.BUTTON_CHANNEL_ID);
+      const promptCategory = guild.channels.cache.get(botData.PROMPT_CATEGORY_ID);
+      const codesCategory = guild.channels.cache.get(botData.CODES_CATEGORY_ID);
+
+      if (buttonChannel && promptCategory && codesCategory) {
+        alreadyDeployed = true;
+      } else {
+        // If any of the channels/categories do not exist, reset botData
+        botData = {};
+        fs.unlinkSync(DATA_FILE);
+      }
+    }
+
+    if (alreadyDeployed) {
+      await interaction.reply({ content: 'The bot has already been deployed. If you wish to redeploy, please delete the existing channels and data.json file.', ephemeral: true });
+      return;
+    }
+
+    // Create categories with permissions to make them private
+    const newPromptCategory = await guild.channels.create({
+      name: 'BurgerCodeGen Prompt',
+      type: 4, // Category
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone,
+          deny: [PermissionsBitField.Flags.ViewChannel],
+        },
+      ],
+    });
+
+    const newCodesCategory = await guild.channels.create({
+      name: 'BurgerCodeGen Codes',
+      type: 4, // Category
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone,
+          deny: [PermissionsBitField.Flags.ViewChannel],
+        },
+      ],
+    });
+
+    // Create button channel
+    const newButtonChannel = await guild.channels.create({
+      name: 'burger code gen',
+      type: 0, // Text Channel
+    });
+
+    // Save IDs to data.json
+    botData = {
+      GUILD_ID: guild.id,
+      BUTTON_CHANNEL_ID: newButtonChannel.id,
+      PROMPT_CATEGORY_ID: newPromptCategory.id,
+      CODES_CATEGORY_ID: newCodesCategory.id,
+    };
+
+    fs.writeFileSync(DATA_FILE, JSON.stringify(botData, null, 2));
+
+    // Send initial embed and button in the button channel
+    const embed = new EmbedBuilder()
+      .setTitle('• BurgerCodeGen •')
+      .setDescription(
+        '\nThis bot was made to generate codes for the promotional operation "Burger Mystère" of Burger King France.\n\nTo start, please press the button and follow the instructions.\n\nThe bot will create your own channel for you to make your request and handle it.'
+      )
+      .setColor('#FF5500');
+
+    const generateButton = new ButtonBuilder()
+      .setCustomId('generate_button')
+      .setLabel('‎ ‎ ‎ Generate')
+      .setEmoji('🍔')
+      .setStyle(ButtonStyle.Success);
+
+    const row = new ActionRowBuilder().addComponents(generateButton);
+
+    await newButtonChannel.send({ embeds: [embed], components: [row] });
+
+    await interaction.reply({ content: 'Bot deployed successfully!', ephemeral: true });
+  } catch (err) {
+    console.error('Error during deployment:', err);
+    await interaction.reply({ content: 'An error occurred during deployment. Please check the bot\'s permissions and try again.', ephemeral: true });
+  }
+}
+
 async function handleGenerateButton(interaction) {
   try {
-    const guild = await client.guilds.fetch(GUILD_ID);
+    if (!botData || !botData.PROMPT_CATEGORY_ID || !botData.CODES_CATEGORY_ID) {
+      await interaction.reply({ content: 'Missing data.json file or bot is not properly configured. Please contact the owner.', ephemeral: true });
+      return;
+    }
+
+    const guild = await client.guilds.fetch(botData.GUILD_ID);
     const userId = interaction.user.id;
     const promptChannelName = `prompt-${userId}`;
     const codesChannelName = `codes-${userId}`;
@@ -159,7 +280,7 @@ async function handleGenerateButton(interaction) {
     const channel = await guild.channels.create({
       name: promptChannelName,
       type: 0,
-      parent: PROMPT_CATEGORY_ID,
+      parent: botData.PROMPT_CATEGORY_ID,
       permissionOverwrites: [
         { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
         { id: userId, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] },
@@ -169,7 +290,7 @@ async function handleGenerateButton(interaction) {
 
     const embed = new EmbedBuilder()
       .setTitle('• BurgerCodeGen •')
-      .setDescription("Welcome to your own prompt channel.\n\nLet the bot guide you through the whole process!")
+      .setDescription('Welcome to your own prompt channel.\n\nLet the bot guide you through the whole process!')
       .setColor('#FF5500');
 
     const startButton = new ButtonBuilder()
@@ -256,7 +377,7 @@ async function handleSelectProduct(interaction) {
 
       const embed = new EmbedBuilder()
         .setTitle('• Lots Quantity •')
-        .setDescription("First, how many lots do you want?\n\n[INFO]: Each lot contains **2 codes**, and you can generate a maximum of **10 lots**.")
+        .setDescription('First, how many lots do you want?\n\n[INFO]: Each lot contains **2 codes**, and you can generate a maximum of **10 lots**.')
         .setColor('#FF5500');
 
       await interaction.update({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
@@ -283,7 +404,7 @@ async function handleSelectLots(interaction) {
 
       const embed = new EmbedBuilder()
         .setTitle('• Burger Choices •')
-        .setDescription("Now choose how many **Meat** codes you want.\n\nThe rest of the unselected codes will be assigned as **Veggie**.")
+        .setDescription('Now choose how many **Meat** codes you want.\n\nThe rest of the unselected codes will be assigned as **Veggie**.')
         .setColor('#FF5500');
 
       await interaction.update({ embeds: [embed], components: [new ActionRowBuilder().addComponents(meatSelectMenu)] });
@@ -337,7 +458,12 @@ async function handleSelectMeat(interaction) {
 
 async function handleConfirmButton(interaction) {
   try {
-    const guild = await client.guilds.fetch(GUILD_ID);
+    if (!botData || !botData.CODES_CATEGORY_ID) {
+      await interaction.reply({ content: 'Missing data.json file or bot is not properly configured. Please contact the owner.', ephemeral: true });
+      return;
+    }
+
+    const guild = await client.guilds.fetch(botData.GUILD_ID);
     const userId = interaction.user.id;
     const userData = userSelections.get(userId);
     const { productType, totalCodes } = userData;
@@ -350,7 +476,7 @@ async function handleConfirmButton(interaction) {
     const codesChannel = await guild.channels.create({
       name: `codes-${userId}`,
       type: 0,
-      parent: CODES_CATEGORY_ID,
+      parent: botData.CODES_CATEGORY_ID,
       permissionOverwrites: [
         { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
         { id: userId, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] },
@@ -366,7 +492,7 @@ async function handleConfirmButton(interaction) {
 
     const embed = new EmbedBuilder()
       .setTitle('• BurgerCodeGen •')
-      .setDescription("The codes are being generated, please wait patiently.\n\nAfter you use your codes, please close this channel, else you won't be able to generate new codes.")
+      .setDescription('The codes are being generated, please wait patiently.\n\nAfter you use your codes, please close this channel, else you won\'t be able to generate new codes.')
       .setColor('#FF5500');
 
     const closeButton = new ButtonBuilder()
@@ -407,7 +533,7 @@ async function handleConfirmButton(interaction) {
       await zipFiles(tempUserDir, zipFilePath);
       generatedFiles.push(zipFilePath);
 
-      await codesChannel.send({files: [zipFilePath]});
+      await codesChannel.send({ files: [zipFilePath] });
 
     } else if (productType === 'icecream') {
       for (let i = 0; i < totalCodes; i += 2) {
@@ -431,8 +557,8 @@ async function handleConfirmButton(interaction) {
       const zipFilePath = path.join(QR_CODE_DIRECTORY, `QRcodes_${userId}.zip`);
       await zipFiles(tempUserDir, zipFilePath);
       generatedFiles.push(zipFilePath);
-      
-      await codesChannel.send({files: [zipFilePath]});
+
+      await codesChannel.send({ files: [zipFilePath] });
     }
 
     deleteFiles(generatedFiles);
@@ -447,15 +573,16 @@ async function handleConfirmButton(interaction) {
     }, 5000);
   } catch (err) {
     console.error('Error while confirming:', err);
+    await interaction.reply({ content: 'An error occurred during code generation. Please contact the owner.', ephemeral: true });
   }
 }
 
 function createCodeEmbed(lotNumber, codeNumber, choice, code, qrCodeFile, productType) {
   let description;
   if (productType === 'burger') {
-    description = `\n**Lot ${lotNumber} - Code ${codeNumber}**\n\n**${choice === 'B' ? '🍖 • Meat' : '🍃 • Veggie'}** code:\n\`${code}\``;
+    description = `\n**Lot ${lotNumber} - Code ${codeNumber}**\n\n**${choice === 'B' ? '🍖 • Meat' : '🍃 • Veggie'}** code:\n\n\`${code}\``;
   } else if (productType === 'icecream') {
-    description = `\n**Code ${codeNumber}**\n\n🍦 • **Ice Cream** code:\n\`${code}\``;
+    description = `\n**Code ${codeNumber}**\n\n🍦 • **Ice Cream** code:\n\n\`${code}\``;
   }
 
   const embed = new EmbedBuilder()
