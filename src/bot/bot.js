@@ -172,6 +172,12 @@ async function handleDeployCommand(interaction) {
   try {
     const guild = await client.guilds.fetch(interaction.guildId);
 
+    const ownerId = guild.ownerId;
+    if (interaction.user.id !== ownerId) {
+      await interaction.reply({ content: 'Only the owner of the server can deploy the bot.', ephemeral: true });
+      return;
+    }
+
     let alreadyDeployed = false;
 
     if (botData.GUILD_ID && botData.BUTTON_CHANNEL_ID && botData.PROMPT_CATEGORY_ID && botData.CODES_CATEGORY_ID) {
