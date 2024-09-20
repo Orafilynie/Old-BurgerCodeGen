@@ -23,7 +23,7 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
       'Accept': 'application/json, text/plain, */*',
       'x-application': 'WEBSITE',
       'x-device': deviceId,
-      'x-version': '10.4.1',
+      'x-version': '10.5.1',
       'Accept-Language': 'fr-FR,fr;q=0.9',
       'User-Agent': 'Mobile/1439457264 CFNetwork/1498.700.2 Darwin/23.6.0',
       'Connection': 'keep-alive',
