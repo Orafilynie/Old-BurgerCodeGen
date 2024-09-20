@@ -1,6 +1,6 @@
 # BurgerCodeGen Discord Bot
 
-BurgerCodeGen is a Discord bot designed to generate promotional codes for Burger King France's "Burger Mystère" campaign. 
+BurgerCodeGen is a Discord bot designed to generate promotional codes for Burger King France's "Burger Mystère" campaign. (Générateur de code "Burger Mystère" in French)
 
 This campaing consist of a code that allows you to buy a random burger from the menu for only €2.90, which is pretty economical when an average burger base cost roughly 5€. 
 
