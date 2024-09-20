@@ -8,7 +8,7 @@ The campaing is made to give only 2 codes per device, but this project was made 
 
 The bot allows users to request codes for meat or vegetarian burgers, generates QR codes for each trough an automated discord bot.
 
-**NEW**: The bot now support the "Glace Mystère" promotionnal operation codes, named as "Ice Cream" codes.
+**NEW**: The bot now support the "Glace Mystère" promotional operation codes, named as "Ice Cream" codes.
 
 Please note that it is my very first finished and public project, that the means the code could be unoptimized and messy in some ways and that i didn't tested the bot with heavy request. This project is more of a PoC.
 
