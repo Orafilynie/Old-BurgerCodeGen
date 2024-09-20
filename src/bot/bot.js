@@ -98,7 +98,6 @@ client.once('ready', async () => {
           .setDescription('Deploy the bot by creating necessary categories and channels.')
           .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
       );
-      console.log('Slash command /deploy registered.');
     } catch (err) {
       console.error('Error registering /deploy command:', err);
     }
@@ -174,7 +173,6 @@ async function handleDeployCommand(interaction) {
   try {
     const guild = await client.guilds.fetch(interaction.guildId);
 
-    // Check if data.json exists and IDs are valid
     let alreadyDeployed = false;
 
     if (botData.GUILD_ID && botData.BUTTON_CHANNEL_ID && botData.PROMPT_CATEGORY_ID && botData.CODES_CATEGORY_ID) {
@@ -185,7 +183,6 @@ async function handleDeployCommand(interaction) {
       if (buttonChannel && promptCategory && codesCategory) {
         alreadyDeployed = true;
       } else {
-        // If any of the channels/categories do not exist, reset botData
         botData = {};
         fs.unlinkSync(DATA_FILE);
       }
@@ -196,10 +193,9 @@ async function handleDeployCommand(interaction) {
       return;
     }
 
-    // Create categories with permissions to make them private
     const newPromptCategory = await guild.channels.create({
       name: 'BurgerCodeGen Prompt',
-      type: 4, // Category
+      type: 4,
       permissionOverwrites: [
         {
           id: guild.roles.everyone,
@@ -210,7 +206,7 @@ async function handleDeployCommand(interaction) {
 
     const newCodesCategory = await guild.channels.create({
       name: 'BurgerCodeGen Codes',
-      type: 4, // Category
+      type: 4,
       permissionOverwrites: [
         {
           id: guild.roles.everyone,
@@ -219,13 +215,11 @@ async function handleDeployCommand(interaction) {
       ],
     });
 
-    // Create button channel
     const newButtonChannel = await guild.channels.create({
       name: 'burger code gen',
-      type: 0, // Text Channel
+      type: 0,
     });
 
-    // Save IDs to data.json
     botData = {
       GUILD_ID: guild.id,
       BUTTON_CHANNEL_ID: newButtonChannel.id,
@@ -235,7 +229,6 @@ async function handleDeployCommand(interaction) {
 
     fs.writeFileSync(DATA_FILE, JSON.stringify(botData, null, 2));
 
-    // Send initial embed and button in the button channel
     const embed = new EmbedBuilder()
       .setTitle('• BurgerCodeGen •')
       .setDescription(
