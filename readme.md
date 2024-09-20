@@ -79,6 +79,8 @@ Please ensure the bot is invited to your Discord server with the administrator p
 
 ## Setup
 
+You need to ensure that you are the owner of the server you want to deploy the bot on.
+
 To setup the bot, use the `/deploy` command in any discord channel.
 
 It will automatically create the categories and channel for the bot to use, and store the IDs inside a file called `data.json` at the root folder.
