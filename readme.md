@@ -8,6 +8,8 @@ The campaing is made to give only 2 codes per device, but this project was made 
 
 The bot allows users to request codes for meat or vegetarian burgers, generates QR codes for each trough an automated discord bot.
 
+**NEW**: The bot now support the "Glace Mystère" promotionnal operation codes, named as "Ice Cream" codes.
+
 Please note that it is my very first finished and public project, that the means the code could be unoptimized and messy in some ways and that i didn't tested the bot with heavy request. This project is more of a PoC.
 
 ## Table of Contents
@@ -17,6 +19,7 @@ Please note that it is my very first finished and public project, that the means
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Running the Bot](#running-the-bot)
+- [Setup](#setup)
 - [Usage](#usage)
 
 ## Features
@@ -36,14 +39,13 @@ Please note that it is my very first finished and public project, that the means
 - **Node.js**: Version 14 or higher.
 - **Discord Bot Token**: You need a Discord bot token from the [Discord Developer Portal](https://discord.com/developers/applications).
 - **Guild (Server) ID**: The ID of your Discord server.
-- **Channel and Category IDs**: IDs for the specific channels and categories the bot will interact with.
 
 ## Installation
 
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/BurgerCodeGen.git
+   git clone https://github.com/Orafilynie/BurgerCodeGen.git
    cd BurgerCodeGen
    ```
 
@@ -61,29 +63,11 @@ Navigate to the example.env file in the root directory and modify the following 
 DISCORD_TOKEN=your_discord_bot_token
 CLIENT_ID=your_bot_id
 GUILD_ID=your_guild_id
-BUTTON_CHANNEL_ID=button_channel_id
-PROMPT_CATEGORY_ID=prompt_category_id
-CODES_CATEGORY_ID=codes_category_id
 ```
 
 - **DISCORD_TOKEN**: Your Discord bot token.
 - **CLIENT_ID**: Your Discord bot ID.
 - **GUILD_ID**: The ID of your Discord server.
-- **BUTTON_CHANNEL_ID**: The ID of the channel where the "Generate" button will be placed.
-- **PROMPT_CATEGORY_ID**: The ID of the category where user prompt channels will be created.
-- **CODES_CATEGORY_ID**: The ID of the category where code channels will be created.
-
-For more explaination, the bot automatically creates private channels for the users to ensure a smooth process.
-
-It does that under two categories to keep the management easy. 
-
-It will create the privates request channels under the `PROMPT_CATEGORY_ID`.
-
-It will create the privates codes channels under the `CODES_CATEGORY_ID` after the request has been sent.
-
-So you need to fill the categories ID in the .env so the bot knows where to create the channels.
-
-For the button channel ID, this is just in which channel the bot is gonna take the new generation requests.
 
 ## Running the Bot
 
@@ -91,21 +75,28 @@ For the button channel ID, this is just in which channel the bot is gonna take t
 node index.js
 ```
 
-Please ensure the bot is invited to your Discord server with the appropriate permissions.
+Please ensure the bot is invited to your Discord server with the administrator permissions.
+
+## Setup
+
+To setup the bot, use the `/deploy` command in any discord channel.
+
+It will automatically create the categories and channel for the bot to use, and store the IDs inside a file called `data.json` at the root folder.
+
+Please do not delete the `data.json` unless you want to redeploy the bot.
 
 ## Usage
 
 1. **Initiate a Request**
 
-   - Go to the channel specified by `BUTTON_CHANNEL_ID`.
+   - Go to the code generation channel.
    - Click on the Generate button to start the process.
 
 2. **Follow the Prompts**
 
    - The bot will create a private channel for your request.
    - Click Start to begin.
-   - Select the number of lots you want (each lot contains 2 codes).
-   - Choose the number of meat codes; the rest will be vegetarian.
+   - Follow the instructions
 
 3. **Confirm and Receive Codes**
 
