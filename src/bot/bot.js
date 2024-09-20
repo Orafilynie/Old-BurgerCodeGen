@@ -217,6 +217,17 @@ async function handleDeployCommand(interaction) {
     const newButtonChannel = await guild.channels.create({
       name: 'burger code gen',
       type: 0,
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone.id,
+          allow: [PermissionsBitField.Flags.ViewChannel],
+          deny: [PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AddReactions],
+        },
+        {
+          id: client.user.id,
+          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+        },
+      ],
     });
 
     botData = {
