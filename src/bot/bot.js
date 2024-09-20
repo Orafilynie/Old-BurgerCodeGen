@@ -22,7 +22,6 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load or initialize data.json
 let botData = {};
 if (fs.existsSync(DATA_FILE)) {
   try {
