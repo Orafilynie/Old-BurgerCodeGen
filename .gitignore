@@ -1,3 +1,4 @@
 /node_modules
 /qrcodes
 .env
+data.json
