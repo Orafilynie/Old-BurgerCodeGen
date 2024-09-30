@@ -1,3 +1,7 @@
+# Warning !
+
+The promotional operation has ended the 29/09. It will take place normally around the same period the next year and if it is the case i will try to update the bot. From now on, the bot is not usable.
+
 # BurgerCodeGen Discord Bot
 
 BurgerCodeGen is a Discord bot designed to generate promotional codes for Burger King France's "Burger Mystère" campaign. (Générateur de code "Burger Mystère" in French)
