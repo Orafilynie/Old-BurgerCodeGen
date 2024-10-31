@@ -2,6 +2,8 @@
 
 The promotional operation has ended the 29/09. It will take place normally around the same period the next year and if it is the case i will try to update the bot. From now on, the bot is not usable.
 
+EDIT : Due to a change in the Burger King API Security as the 30/10/2024 , the bot cannot be updated for the next year, this project is now not maintained.
+
 # BurgerCodeGen Discord Bot
 
 BurgerCodeGen is a Discord bot designed to generate promotional codes for Burger King France's "Burger Mystère" campaign. (Générateur de code "Burger Mystère" in French)
