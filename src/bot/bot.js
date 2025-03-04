@@ -343,12 +343,12 @@ async function handleStartButton(interaction) {
       .setPlaceholder('Select a product.')
       .addOptions([
         { label: '🍔 Burger', value: 'burger' },
-        { label: '🍦 Ice Cream', value: 'icecream' }
+        //{ label: '🍦 Ice Cream', value: 'icecream' }
       ]);
 
     const embed = new EmbedBuilder()
       .setTitle('• Product Selection •')
-      .setDescription('You can choose between **Burger** codes and **Ice Cream** codes.\n\nPlease choose what product you want with the dropdown menu.')
+      .setDescription('You can choose between **Burger** codes ~~and Ice Cream codes~~ (currently disabled).\n\nPlease choose what product you want with the dropdown menu.')
       .setColor('#FF5500');
 
     await channel.send({
