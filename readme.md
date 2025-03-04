@@ -1,8 +1,6 @@
 # Warning !
 
-The promotional operation has ended the 29/09. It will take place normally around the same period the next year and if it is the case i will try to update the bot. From now on, the bot is not usable.
-
-EDIT : Due to a change in the Burger King API Security as the 30/10/2024 , the bot cannot be updated for the next year, this project is now not maintained.
+EDIT : The operation has now begun once more (without ice cream) and after some testing, the bot is still working at this date (04/03).
 
 # BurgerCodeGen Discord Bot
 
@@ -13,8 +11,6 @@ This campaing consist of a code that allows you to buy a random burger from the 
 The campaing is made to give only 2 codes per device, but this project was made to unlock the full potential of it and save you some money if you buy in "bulk".
 
 The bot allows users to request codes for meat or vegetarian burgers, generates QR codes for each trough an automated discord bot.
-
-**NEW**: The bot now support the "Glace Mystère" promotional operation codes, named as "Ice Cream" codes.
 
 Please note that it is my very first finished and public project, that the means the code could be unoptimized and messy in some ways and that i didn't tested the bot with heavy request. This project is more of a PoC.
 
