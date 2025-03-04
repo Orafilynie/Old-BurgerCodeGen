@@ -23,9 +23,9 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
       'Accept': 'application/json, text/plain, */*',
       'x-application': 'WEBSITE',
       'x-device': deviceId,
-      'x-version': '10.5.1',
+      'x-version': '10.19.0',
       'Accept-Language': 'fr-FR,fr;q=0.9',
-      'User-Agent': 'Mobile/1439457264 CFNetwork/1498.700.2 Darwin/23.6.0',
+      'User-Agent': 'Mobile/1639457264 CFNetwork/3826.400.120 Darwin/24.3.0',
       'Connection': 'keep-alive',
       'x-platform': 'APP_IOS',
       'Content-Type': 'application/json'
