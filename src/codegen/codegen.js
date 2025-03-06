@@ -7,6 +7,27 @@ const { v4: uuidv4 } = require('uuid');
 
 const pepper = process.env.PEPPER;
 
+async function retryOn503(requestFn, maxRetries = 25, delay = 1000) {
+  let attempt = 0;
+  let lastError;
+  while (attempt < maxRetries) {
+    try {
+      const response = await requestFn();
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (error.response && error.response.status === 503) {
+        attempt++;
+        console.log(`ERROR • HTTP 503, retrying request : ${attempt}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw lastError;
+}
+
 function generateHash(king) {
   const toHash = king + pepper;
   return crypto.createHash('md5').update(toHash).digest('hex');
@@ -31,21 +52,27 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
       'Content-Type': 'application/json'
     };
 
-    await axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/app/initialize', { headers });
+    await retryOn503(() => 
+      axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/app/initialize', { headers })
+    );
 
     const data = { king: deviceId, hash, queen: queenToken };
 
-    const offersResponse = await axios.post(
-      'https://webapi.burgerking.fr/blossom/api/v13/public/offers/page',
-      data,
-      { headers }
+    const offersResponse = await retryOn503(() => 
+      axios.post(
+        'https://webapi.burgerking.fr/blossom/api/v13/public/offers/page',
+        data,
+        { headers }
+      )
     );
 
     if (offersResponse.status === 200) {
-      const operationsResponse = await axios.post(
-        'https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/all',
-        data,
-        { headers }
+      const operationsResponse = await retryOn503(() => 
+        axios.post(
+          'https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/all',
+          data,
+          { headers }
+        )
       );
 
       const restaurantCodes = [];
@@ -110,8 +137,8 @@ async function generateCodes(productType, firstChoice = null, secondChoice = nul
       const secondUrl = `https://webapi.burgerking.fr/blossom/api/v13/public/operation-device/burger-mystere/confirm-choice?couponCode=${restaurantCodes[1]}&promotionId=${secondPromotionId}`;
 
       const [firstResponse, secondResponse] = await Promise.all([
-        axios.post(firstUrl, data, { headers }),
-        axios.post(secondUrl, data, { headers })
+        retryOn503(() => axios.post(firstUrl, data, { headers })),
+        retryOn503(() => axios.post(secondUrl, data, { headers }))
       ]);
 
       if (firstResponse.status === 200 && secondResponse.status === 200) {
