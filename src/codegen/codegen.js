@@ -48,7 +48,7 @@ const retryOn503 = async (requestFn, maxRetries = MAX_RETRIES, delay = RETRY_DEL
   throw new Error('Max retries reached for 503 errors');
 };
 
-const generateHash = (king) => crypto.createHash('md5').update(king + PEPPER).digest('hex');
+const generateHash = (king) => crypto.createHash('md5').update(king + PEPPER, 'utf8').digest('hex');
 
 // Core functions
 const createDeviceHeaders = (deviceId) => ({
@@ -115,8 +115,6 @@ const generateCodes = async (productType, firstChoice = null, secondChoice = nul
       hash: generateHash(deviceId),
       queen: await Captcha.resolve()
     };
-
-    console.log(data);
 
     const operations = await fetchOperations(data, headers);
     const restaurantCodes = await getRestaurantCodes(operations, productType);
