@@ -13,9 +13,9 @@ const API_HEADERS = {
   'Host': 'webapi.burgerking.fr',
   'Accept': 'application/json, text/plain, */*',
   'x-application': 'WEBSITE',
-  'x-version': '10.19.0',
+  'x-version': '10.23.0',
   'Accept-Language': 'fr-FR,fr;q=0.9',
-  'User-Agent': 'Mobile/1639457264 CFNetwork/3826.400.120 Darwin/24.3.0',
+  'User-Agent': 'com.unit9.bkFrApp/10.23.0',
   'Connection': 'keep-alive',
   'x-platform': 'APP_IOS',
   'Content-Type': 'application/json'
@@ -55,12 +55,6 @@ const createDeviceHeaders = (deviceId) => ({
   ...API_HEADERS,
   'x-device': deviceId
 });
-
-const initializeApi = async (headers) => {
-  await retryOn503(() => 
-    axios.get('https://webapi.burgerking.fr/blossom/api/v13/public/app/initialize', { headers })
-  );
-};
 
 const fetchOperations = async (data, headers) => {
   const response = await retryOn503(() =>
@@ -122,7 +116,8 @@ const generateCodes = async (productType, firstChoice = null, secondChoice = nul
       queen: await Captcha.resolve()
     };
 
-    await initializeApi(headers);
+    console.log(data);
+
     const operations = await fetchOperations(data, headers);
     const restaurantCodes = await getRestaurantCodes(operations, productType);
 
