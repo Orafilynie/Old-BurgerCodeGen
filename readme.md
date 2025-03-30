@@ -1,6 +1,6 @@
 # Warning !
 
-EDIT : The operation has now begun once more (without ice cream) and after some testing, the bot is still working at this date (04/03).
+EDIT : The operation has now ended once more, as so, the project will not be updated until the operation comes back (maybe in this summer around september more or less)
 
 # BurgerCodeGen Discord Bot
 
